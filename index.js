@@ -30,23 +30,29 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const roomsCollection = client.db("ezBookingDB").collection("rooms");
-
+    const bookingCollection = client.db("ezBookingDB").collection("bookings");
 
     app.get("/rooms", async (req, res) => {
       const { sortBy } = req.query;
       let sortOptions = {};
-    
-      if (sortBy === 'price_asc') {
+
+      if (sortBy === "price_asc") {
         sortOptions = { price_per_night: 1 };
-      } else if (sortBy === 'price_desc') {
+      } else if (sortBy === "price_desc") {
         sortOptions = { price_per_night: -1 };
       }
-    
+
       const cursor = roomsCollection.find().sort(sortOptions);
       const result = await cursor.toArray();
       res.json(result);
     });
 
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingCollection.insertOne(booking);
+      res.send(result);
+    });
 
     // app.get("/rooms", async (req, res) => {
     //   const cursor = roomsCollection.find();
@@ -56,9 +62,39 @@ async function run() {
 
     app.get("/rooms/:id", async (req, res) => {
       const id = req.params.id;
+
       const query = { _id: new ObjectId(id) };
       const result = await roomsCollection.findOne(query);
       res.send(result);
+    });
+
+    app.put("/rooms/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateAvailability = req.body;
+
+        const updateDoc = {
+          $set: {
+            availability: updateAvailability.availability,
+          },
+        };
+
+        const result = await roomsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+        if (result.modifiedCount === 1) {
+          res
+            .status(200)
+            .json({ message: "Room availability updated successfully" });
+        } else {
+          res
+            .status(404)
+            .json({ message: "Room not found or availability not updated" });
+        }
+      } catch (error) {
+        console.error("Error updating room availability:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     });
 
     // Connect the client to the server	(optional starting in v4.7)
