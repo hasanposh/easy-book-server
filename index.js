@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -33,10 +33,33 @@ async function run() {
 
 
     app.get("/rooms", async (req, res) => {
-      const cursor = roomsCollection.find();
+      const { sortBy } = req.query;
+      let sortOptions = {};
+    
+      if (sortBy === 'price_asc') {
+        sortOptions = { price_per_night: 1 };
+      } else if (sortBy === 'price_desc') {
+        sortOptions = { price_per_night: -1 };
+      }
+    
+      const cursor = roomsCollection.find().sort(sortOptions);
       const result = await cursor.toArray();
       res.json(result);
-    })
+    });
+
+
+    // app.get("/rooms", async (req, res) => {
+    //   const cursor = roomsCollection.find();
+    //   const result = await cursor.toArray();
+    //   res.json(result);
+    // })
+
+    app.get("/rooms/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await roomsCollection.findOne(query);
+      res.send(result);
+    });
 
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
