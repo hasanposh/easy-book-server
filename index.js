@@ -31,6 +31,7 @@ async function run() {
   try {
     const roomsCollection = client.db("ezBookingDB").collection("rooms");
     const bookingCollection = client.db("ezBookingDB").collection("bookings");
+    const reviewCollection = client.db("ezBookingDB").collection("reviews");
 
     app.get("/rooms", async (req, res) => {
       const { sortBy } = req.query;
@@ -45,13 +46,6 @@ async function run() {
       const cursor = roomsCollection.find().sort(sortOptions);
       const result = await cursor.toArray();
       res.json(result);
-    });
-
-    app.post("/bookings", async (req, res) => {
-      const booking = req.body;
-      console.log(booking);
-      const result = await bookingCollection.insertOne(booking);
-      res.send(result);
     });
 
     // app.get("/rooms", async (req, res) => {
@@ -73,15 +67,15 @@ async function run() {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
         const updateAvailability = req.body;
-
+        // console.log(1);
         const updateDoc = {
           $set: {
             availability: updateAvailability.availability,
           },
         };
-
+// console.log(2)
         const result = await roomsCollection.updateOne(filter, updateDoc);
-        res.send(result);
+        // res.send(result);
         if (result.modifiedCount === 1) {
           res
             .status(200)
@@ -95,6 +89,81 @@ async function run() {
         console.error("Error updating room availability:", error);
         res.status(500).json({ message: "Internal server error" });
       }
+    });
+
+    app.get('/rooms/:id/reviews', async (req, res) => {
+      const id = req.params.id;
+      const filter = { roomId: id };
+      const pipeline = [
+        {
+          $match: filter
+        },
+        {
+          $addFields:{
+            postTimeDate:{$toDate:"$postTime"}
+          }
+        },
+        {
+          $sort:{
+            postTimeDate:-1
+          }
+        }
+      ]
+      const result = await reviewCollection.aggregate(pipeline).toArray();
+      res.send(result);
+    })
+
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    app.get("/bookings", async (req, res) => {
+      // console.log(req.query.email);
+      let query = {};
+      if (req.query?.email) {
+        query = { userMail: req.query.email };
+      }
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.put("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updatedFormattedUDate = req.body;
+      console.log(updatedFormattedUDate);
+      const updateDoc = {
+        $set: {
+          formattedDate: updatedFormattedUDate.updatedFormattedUDate,
+        },
+      };
+
+      const result = await bookingCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      console.log(review);
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
+
+    app.get("/reviews", async (req, res) => {
+      const cursor = reviewCollection.find();
+      const result = await cursor.toArray();
+      res.json(result);
     });
 
     // Connect the client to the server	(optional starting in v4.7)
