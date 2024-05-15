@@ -12,8 +12,8 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://ez-book-client.web.app/",
-      "https://ez-book-client.firebaseapp.com/"
+      "https://ez-book-client.web.app",
+      "https://ez-book-client.firebaseapp.com"
     ],
     credentials: true,
   })
