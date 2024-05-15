@@ -9,7 +9,12 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://ez-book-client.web.app/",
+      "https://ez-book-client.firebaseapp.com/"
+    ],
     credentials: true,
   })
 );
@@ -61,7 +66,7 @@ async function run() {
     const bookingCollection = client.db("ezBookingDB").collection("bookings");
     const reviewCollection = client.db("ezBookingDB").collection("reviews");
 
-     // auth related api
+    // auth related api
     app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
       console.log(user);
@@ -138,10 +143,6 @@ async function run() {
       }
     });
 
-    
-
-    
-
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
       console.log(booking);
@@ -175,7 +176,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/bookings/:id",async (req, res) => {
+    app.delete("/bookings/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await bookingCollection.deleteOne(query);
@@ -213,7 +214,6 @@ async function run() {
 
     app.get("/allReviews", async (req, res) => {
       const pipeline = [
-       
         {
           $addFields: {
             postTimeDate: { $toDate: "$postTime" },
@@ -232,10 +232,15 @@ async function run() {
       res.json(result);
     });
 
+    app.get("/", (req, res) => {
+      res.send("Ez Booking is running");
+    });
+
+
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
@@ -246,10 +251,11 @@ async function run() {
 }
 run().catch(console.dir);
 
-app.get("/", (req, res) => {
-  res.send("Ez Booking is running");
-});
 
+run()
+  .then(() => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+})
+.catch(console.error);
